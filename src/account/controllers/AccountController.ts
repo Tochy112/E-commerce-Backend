@@ -1,24 +1,29 @@
 import { AppDataSource } from "../../data-source"
 import { NextFunction, Request, Response } from "express"
-import { User } from "../../user/entities/User"
+import { Account } from "../entities/Account"
+import { Repository } from "typeorm"
+import { inject, injectable } from "tsyringe";
 
-export class BookController {
-
-    private userRepository = AppDataSource.getRepository(User)
-
-    async all(request: Request, response: Response, next: NextFunction) {
-         const users = await this.userRepository.find()
+@injectable()
+export class AccountController {
+    
+    constructor(
+        @inject(Account.name) private accountRepository: Repository<Account>,
         
-        return response.status(200).json({users})
+    ) {}
+        
+    async all(request: Request, response: Response, next: NextFunction) {
+        const users = await this.accountRepository.find()
+        
+        return response.status(200).json({data: users}); 
     }
-
     
 
     async one(request: Request, response: Response, next: NextFunction) {
         const id = parseInt(request.params.id)
 
 
-        const user = await this.userRepository.findOne({
+        const user = await this.accountRepository.findOne({
             where: { id }
         })
 
@@ -29,21 +34,18 @@ export class BookController {
     }
 
     async save(request: Request, response: Response, next: NextFunction) {
-        const { firstName, lastName, age } = request.body;
+        const { firstName, lastName, username, email, password, role } = request.body;
 
-        // const user = Object.assign(new User(), {
-        //     firstName,
-        //     lastName,
-        //     age
-        // })
-
-        const user = this.userRepository.create({
+        const user = this.accountRepository.create({
             firstName,
             lastName,
-            age
+            username,
+            email,
+            password,
+            role
         })
 
-        await this.userRepository.save(user)
+        await this.accountRepository.save(user)
 
         return response.status(201).json({data: user})
     }
@@ -51,13 +53,13 @@ export class BookController {
     async remove(request: Request, response: Response, next: NextFunction) {
         const id = parseInt(request.params.id)
 
-        let userToRemove = await this.userRepository.findOneBy({ id })
+        let userToRemove = await this.accountRepository.findOneBy({ id })
 
         if (!userToRemove) {
             return "this user not exist"
         }
 
-        await this.userRepository.remove(userToRemove)
+        await this.accountRepository.remove(userToRemove)
 
         return "user has been removed"
     }
