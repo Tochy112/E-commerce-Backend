@@ -1,23 +1,13 @@
 import { AccountController } from "./account/controllers/AccountController"
-
-export const Routes = [{
-    method: "get",
-    route: "/users",
+// Define route groups with base URLs and controllers
+export const RouteGroups = [
+  {
+    prefix: "/accounts",
     controller: AccountController,
-    action: "all"
-}, {
-    method: "get",
-    route: "/users/:id",
-    controller: AccountController,
-    action: "one"
-}, {
-    method: "post",
-    route: "/users",
-    controller: AccountController,
-    action: "save"
-}, {
-    method: "delete",
-    route: "/users/:id",
-    controller: AccountController,
-    action: "remove"
-}]
+    middlewares: []
+  },
+//   {
+//     prefix: "/admin/accounts",
+//     controller: AdminAccountController,
+//   },
+];

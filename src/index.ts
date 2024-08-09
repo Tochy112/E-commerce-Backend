@@ -1,10 +1,10 @@
 import 'express-async-errors'
 import "reflect-metadata"
-import express from "express"
+import express, { NextFunction } from "express"
 import * as bodyParser from "body-parser"
 import { Request, Response } from "express"
 import { AppDataSource } from "./data-source"
-import { Routes } from "./routes"
+import { RouteGroups } from "./routes"
 import dotenv from "dotenv"
 import { ErrorHandler } from "./utils/error-management"
 import "./utils/services"
@@ -17,22 +17,39 @@ AppDataSource.initialize().then(async () => {
 
     // instantiate error handler 
     const errorHandler = new ErrorHandler();
-    app.use(errorHandler.handle);
     app.use(bodyParser.json())
 
-     // register express routes from defined application routes
-     Routes.forEach(route => {
-        (app as any)[route.method](route.route, async (req: Request, res: Response, next: Function) => {
-            try {
-                const controllerInstance = container.resolve(route.controller as any) as any;
-                const result = await controllerInstance[route.action](req, res, next);
-                if (result !== null && result !== undefined) {
-                    res.json(result);
-                }
-            } catch (error) {
-                next(error);
+    // register express routes from defined application routes
+    const API_VERSION = "/v1";
+
+    RouteGroups.forEach(group => {
+    const controllerInstance = container.resolve(group.controller as any) as any;
+        Object.getOwnPropertyNames(group.controller?.prototype).forEach(methodName => {
+            
+            if (methodName !== "constructor") {
+                const routePath = `${API_VERSION}${group.prefix}/${methodName}`;
+    
+                const middlewares = group.middlewares || [];
+                const routeHandler = async (req: Request, res: Response, next: NextFunction) => {
+                    try {
+                        const result = await controllerInstance[methodName](req, res, next);
+                        if (result !== null && result !== undefined) {                                                        
+                            return result
+                        }
+                    } catch (error) {
+                        next(error);
+                    }
+                };
+    
+                app.all(routePath, ...middlewares, routeHandler);
             }
         });
+    });
+    
+    app.use(errorHandler.handle);
+
+    app.use((req, res) => {
+        res.status(404).send('Not Found');
     });
 
     app.listen(5000)
