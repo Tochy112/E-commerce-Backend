@@ -12,6 +12,9 @@ import {
   import bcrypt from "bcryptjs";
   import { BadRequestError } from "../../utils/error-management/error";
   import { Role } from "../../roles/entities/Roles";
+  import jwt from "jsonwebtoken"
+  import dotenv from "dotenv"
+  dotenv.config()
   
   @Entity()
   export class Account{
@@ -68,6 +71,16 @@ import {
     checkPassword(password: string) {
       if (!bcrypt.compareSync(password, this.password))
         throw new BadRequestError("Invalid credentails");
+    }
+
+    generateToken():string {
+      return jwt.sign(
+        { userId: this.id, username: this.username, role: this.role},
+        process.env.JWT_SECRET!,
+        {
+          expiresIn: process.env.JWT_LIFETIME!,
+        }
+      )
     }
   }
   
