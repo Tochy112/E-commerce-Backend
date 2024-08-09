@@ -7,17 +7,21 @@ import { AppDataSource } from "./data-source"
 import { RouteGroups } from "./routes"
 import dotenv from "dotenv"
 import { ErrorHandler } from "./utils/error-management"
-import "./utils/services"
+import "./services"
 import { container } from 'tsyringe'
+import { AuthMiddleware, conditionalMiddleware } from './utils/middleware/AuthMiddleware'
 dotenv.config()
 
 AppDataSource.initialize().then(async () => {   
+    const port = process.env.PORT || 5000
     // create express app
     const app = express()
 
     // instantiate error handler 
     const errorHandler = new ErrorHandler();
     app.use(bodyParser.json())
+
+    app.use(conditionalMiddleware(AuthMiddleware()));
 
     // register express routes from defined application routes
     const API_VERSION = "/v1";
@@ -45,14 +49,14 @@ AppDataSource.initialize().then(async () => {
             }
         });
     });
-    
+        
     app.use(errorHandler.handle);
 
     app.use((req, res) => {
         res.status(404).send('Not Found');
     });
 
-    app.listen(5000)
+    app.listen(port)
 
     console.log("Express server has started on port 5000")
 

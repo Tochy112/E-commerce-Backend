@@ -1,24 +1,25 @@
-// import { Request, Response, NextFunction } from "express";
-// import AuthService from "../../accounts/services/AuthService";
-// import { ForbiddenError } from "../error-management/error";
+import { Request, Response, NextFunction } from "express";
+import { ForbiddenError } from "../error-management/error";
+import { container } from "tsyringe";
+import AuthService from "../../account/services/AuthService";
 
-// export default function RoleMiddleware(role: string) {
-//   return class {
-//     async handle(
-//       request: Request,
-//       response: Response,
-//       next: NextFunction
-//     ): Promise<void> {
-//       const authService = container.resolve<AuthService>(AuthService.name);
-//       const account = await authService.getCurrentAccount(request);
+export function RoleMiddleware(...allowedRoles: string[]) {
+  return async (request: Request, response: Response, next: NextFunction) => {
+    try {
+      const authService = container.resolve<AuthService>(AuthService.name);
+      const account = await authService.getCurrentAccount(request);
 
-//       const accountRole = account.role;
+      const accountRole = account.role.name;
 
-//       if (accountRole.name == role) next();
-//       else
-//         throw new ForbiddenError(
-//           "Inadequate permissions to carry out this operation"
-//         );
-//     }
-//   };
-// }
+      if (allowedRoles.includes(accountRole)) {
+        next();
+      } else {
+        throw new ForbiddenError(
+          "Inadequate permissions to carry out this operation"
+        );
+      }
+    } catch (error) {
+      next(error);
+    }
+  };
+}
